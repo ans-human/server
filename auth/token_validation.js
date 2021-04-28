@@ -1,26 +1,26 @@
 const jwt = require("jsonwebtoken");
+const secret = process.env.JWT_KEY;
 module.exports = {
   checkToken: (req, res, next) => {
-    let token = req.get("authorization");
-    if (token) {
-      // Remove Bearer from string
-      token = token.slice(7);
-      jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-        if (err) {
-          return res.json({
-            success: 0,
-            message: "Invalid Token..."
-          });
-        } else {
-          req.decoded = decoded;
-          next();
-        }
-      });
-    } else {
-      return res.json({
-        success: 0,
-        message: "Access Denied! Unauthorized User"
-      });
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+      const isCustomAuth = token.length < 500;
+  
+      let decodedData;
+  
+      if (token && isCustomAuth) {      
+        decodedData = jwt.verify(token, secret);
+  
+        req.userId = decodedData?.id;
+      } else {
+        decodedData = jwt.decode(token);
+  
+        req.userId = decodedData?.sub;
+      }    
+  
+      next();
+    } catch (error) {
+      console.log(error);
     }
   }
 };

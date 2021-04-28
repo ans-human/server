@@ -1,6 +1,6 @@
 const {
     create,
-    getUserByUsername,
+    getUserByEmail,
     getUserByUserId,
     getUsers,
     updateUser,
@@ -12,28 +12,69 @@ const {
   module.exports = {
     createUser: (req, res) => {
       const body = req.body;
-      // console.log(body.username)
+      console.log(body);
       const salt = genSaltSync(10);
       body.password = hashSync(body.password, salt);
       create(body, (err, results) => {
         if (err) {
           console.log(err);
-          return res.status(500).json({
+          return res.json({
             success: 0,
             message: "Database connection errror"
           });
         }
-        return res.status(200).json({
-          success: 1,
-          data: results
+        getUserByEmail(body.email, (err, results) => {
+          if (err) {
+            console.log(err);
+          }
+          console.log(results)
+          if (!results) {
+            return res.json({
+              success: 0,
+              data: "Invalid username or password"
+            });
+          }
+          console.log(results);
+          if (results) {
+            results.password = undefined;
+            
+            const jsontoken = sign({ email: results.email, id: results.id }, process.env.JWT_KEY, {expiresIn: "1h"});
+            
+            const name = results.firstname + ' ' + results.lastname;
+            const new_results = {...results, name: name};
+            return res.json({
+              success: 1,
+              message: "login successfully",
+              result: new_results,
+              token: jsontoken
+            });
+  
+          } else {
+            return res.json({
+              success: 0,
+              data: "Invalid username or password"
+            });
+          }
         });
+        // const _id = results.insertId;
+        // const result = {...results, id: _id};
+        // console.log(results);
+        // return res.status(200).json({
+        //   success: 1,
+        //   data: results,
+        //   result: result,
+        // });
       });
     },
     login: (req, res) => {
       const body = req.body;
-      getUserByUsername(body.username, (err, results) => {
+      getUserByEmail(body.email, (err, results) => {
         if (err) {
           console.log(err);
+          return res.json({
+            success: 0,
+            data: "Invalid username or password"
+          });
         }
         console.log(results)
         if (!results) {
@@ -44,17 +85,22 @@ const {
         }
         const result = compareSync(body.password, results.password);
         // const result = (body.password === results.password);
+        console.log(result);
         console.log(results.password, body.password)
         if (result) {
           results.password = undefined;
-          const jsontoken = sign({ result: results }, process.env.JWT_KEY, {
-            expiresIn: "1h"
-          });
+          
+          const jsontoken = sign({ email: results.email, id: results.id }, process.env.JWT_KEY, {expiresIn: "1h"});
+          
+          const name = results.firstname + ' ' + results.lastname;
+          const new_results = {...results, name: name};
           return res.json({
             success: 1,
             message: "login successfully",
+            result: new_results,
             token: jsontoken
           });
+
         } else {
           return res.json({
             success: 0,
@@ -65,6 +111,7 @@ const {
     },
     getUserByUserId: (req, res) => {
       const id = req.params.id;
+
       getUserByUserId(id, (err, results) => {
         if (err) {
           console.log(err);

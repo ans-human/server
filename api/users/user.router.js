@@ -3,16 +3,18 @@ const { checkToken } = require("../../auth/token_validation");
 const {
   createUser,
   login,
-  getUserByUserId,
+  getUserByEmail,
   getUsers,
   updateUsers,
   deleteUser
 } = require("./user.controller");
 // console.log("hello")
-router.get("/", checkToken, getUsers);
-router.post("/", createUser);
-router.get("/:id", checkToken, getUserByUserId);
-router.post("/login", login)+
+
+// router.get("/", getUsers);
+// router.get("/:id", checkToken, getUserByUserEmail);
+
+router.post("/signup", createUser);
+router.post("/login", login);
 router.patch("/", checkToken, updateUsers);
 router.delete("/", checkToken, deleteUser);
 
